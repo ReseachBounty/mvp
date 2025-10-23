@@ -100,6 +100,22 @@ def generate_new_account_email(
     return EmailData(html_content=html_content, subject=subject)
 
 
+def generate_send_report_email(
+    email_to: str, report_link: str
+) -> EmailData:
+    project_name = settings.PROJECT_NAME
+    subject = f"{project_name} - Report ready"
+    html_content = render_email_template(
+        template_name="send_report.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "email": email_to,
+            "report_link": report_link,
+        },
+    )
+    return EmailData(html_content=html_content, subject=subject)
+
+
 def generate_password_reset_token(email: str) -> str:
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.now(timezone.utc)

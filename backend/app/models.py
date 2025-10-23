@@ -2,6 +2,7 @@ import uuid
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
+from enum import Enum
 
 
 # Shared properties
@@ -111,3 +112,43 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+# Sviluppo MVP
+
+
+class EnumTipoAzienda(str, Enum):
+    STARTUP = "Startup"
+    PMI = "PMI"
+    CORPORATE = "Corporate"
+
+
+class CompanyInfoBase(SQLModel):
+    name: str = Field(max_length=255)
+    url_linkedin: str = Field(max_length=255)
+    url_sito: str = Field(max_length=255)
+    nazione: str = Field(max_length=100)
+    citta: str = Field(max_length=100)
+    settore: str = Field(max_length=100)
+    tipo_azienda: EnumTipoAzienda
+    cta_email: EmailStr = Field(max_length=255)
+
+class CompanyInfo(CompanyInfoBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+class CompanyInfoCreate(CompanyInfoBase):
+    pass
+
+class TaskBase(SQLModel):
+    status: str = Field(max_length=50)
+    # TODO: parametri da aggiungere
+
+class Task(TaskBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    company_info_id: uuid.UUID = Field(
+        foreign_key="companyinfo.id", nullable=False)
+class TaskCreate(TaskBase):
+    pass
+
+class TaskPublic(TaskBase):
+    id: uuid.UUID
+    company_info_id: uuid.UUID

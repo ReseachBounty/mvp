@@ -2,6 +2,7 @@ services:
 
   db:
     image: postgres:17
+    container_name: ${STACK_NAME}-db
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -77,6 +78,7 @@ services:
 
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    container_name: ${STACK_NAME}-backend
     restart: always
     networks:
       - traefik-public
@@ -136,6 +138,7 @@ services:
 
   frontend:
     image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
+    container_name: ${STACK_NAME}-frontend
     restart: always
     networks:
       - traefik-public
