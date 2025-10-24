@@ -1,5 +1,14 @@
 # FastAPI Project - Development
 
+# Prima ricorda che per il backend ti serve
+
+```bash
+cd backend
+uv python pin 3.12
+uv sync
+```
+
+
 ## Docker Compose
 
 * Start the local stack with Docker Compose:
