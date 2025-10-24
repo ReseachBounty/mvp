@@ -133,6 +133,7 @@ class CompanyInfoBase(SQLModel):
     cta_email: EmailStr = Field(max_length=255)
 
 class CompanyInfo(CompanyInfoBase, table=True):
+    __tablename__ = "company_info"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
 class CompanyInfoCreate(CompanyInfoBase):
