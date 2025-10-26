@@ -4,3 +4,11 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.claude/
+codice_generazione_report/
+PRPs/
+.env
+src/__pycache__/__init__.cpython-310.pyc
+src/__pycache__/models.cpython-310.pyc
+.env
+.env

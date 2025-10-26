@@ -12,7 +12,7 @@ from typing import List
 router = APIRouter(prefix="/report", tags=["report"])
 
 @router.get("/{task_id}", response_model=List[TaskPublic])
-def read_reports(session: SessionDep) -> Any:
+def read_reports(session: SessionDep, task_id: uuid.UUID) -> Any:
     """
     Retrieve report the report.
     """

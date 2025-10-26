@@ -146,7 +146,7 @@ class TaskBase(SQLModel):
 class Task(TaskBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     company_info_id: uuid.UUID = Field(
-        foreign_key="companyinfo.id", nullable=False)
+        foreign_key="company_info.id", nullable=False)
 class TaskCreate(TaskBase):
     pass
 
