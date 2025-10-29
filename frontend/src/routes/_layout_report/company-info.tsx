@@ -123,7 +123,11 @@ function CompanyInfo() {
                 variant="subtle"
                 {...register("name", { required: "Il nome è obbligatorio" })}
               />
-              <Field.ErrorText>{errors.name?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
 
             <Field.Root required invalid={!!errors.settore}>
@@ -137,7 +141,11 @@ function CompanyInfo() {
                   required: "Il settore è obbligatorio",
                 })}
               />
-              <Field.ErrorText>{errors.settore?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
           </HStack>
 
@@ -154,7 +162,11 @@ function CompanyInfo() {
                   required: "La nazione è obbligatoria",
                 })}
               />
-              <Field.ErrorText>{errors.nazione?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
 
             <Field.Root required invalid={!!errors.citta}>
@@ -168,7 +180,11 @@ function CompanyInfo() {
                   required: "La città è obbligatoria",
                 })}
               />
-              <Field.ErrorText>{errors.citta?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
           </HStack>
 
@@ -187,7 +203,11 @@ function CompanyInfo() {
                   },
                 })}
               />
-              <Field.ErrorText>{errors.url_linkedin?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
 
             <Field.Root invalid={!!errors.url_sito}>
@@ -203,7 +223,11 @@ function CompanyInfo() {
                   },
                 })}
               />
-              <Field.ErrorText>{errors.url_sito?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
           </HStack>
 
@@ -231,7 +255,11 @@ function CompanyInfo() {
                   },
                 })}
               />
-              <Field.ErrorText>{errors.cta_email?.message}</Field.ErrorText>
+              <Field.ErrorText>
+                {typeof errors.name?.message === "string"
+                  ? errors.name.message
+                  : undefined}
+              </Field.ErrorText>
             </Field.Root>
           </HStack>
 
@@ -244,7 +272,7 @@ function CompanyInfo() {
         </form>
       </Container>
 
-      {taskId && (<TaskLoading taskId={taskId} isOpen={!!taskId} />)}
+      {taskId && <TaskLoading taskId={taskId} isOpen={!!taskId} />}
     </Box>
   );
 }

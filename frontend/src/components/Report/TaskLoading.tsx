@@ -24,8 +24,6 @@ type StepType = (typeof STEPS)[number];
 interface ProcessOverlayProps {
     taskId: string;
     isOpen: boolean;
-    onComplete?: () => void;
-    fetchStatus: () => Promise<StepType | "completed">; // funzione polling API
 }
 
 export default function TaskLoading({
