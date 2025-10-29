@@ -1,7 +1,8 @@
 import uuid
 
 from pydantic import EmailStr
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, Column
+from sqlalchemy import JSON
 from enum import Enum
 
 
@@ -141,15 +142,28 @@ class CompanyInfoCreate(CompanyInfoBase):
 
 class TaskBase(SQLModel):
     status: str = Field(max_length=50)
+    error_message: str | None = Field(default=None, max_length=1000)
     # TODO: parametri da aggiungere
 
 class Task(TaskBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     company_info_id: uuid.UUID = Field(
         foreign_key="company_info.id", nullable=False)
+    result_data: dict | None = Field(default=None, sa_column=Column(JSON))
 class TaskCreate(TaskBase):
     pass
 
 class TaskPublic(TaskBase):
     id: uuid.UUID
     company_info_id: uuid.UUID
+    result_data: dict | None = None
+
+#TODO la api /task_id deve restituire un JSON con la struttura seguente:
+{
+    "overview":{},
+    "actions":{},
+    "analytics":{
+        "images":{} #link delle immagini alla cdn del report
+    },
+    "bytes":{} #bytes del pdf del report
+}
