@@ -9,4 +9,6 @@ codice_generazione_report/
 PRPs/
 src/__pycache__/__init__.cpython-310.pyc
 src/__pycache__/models.cpython-310.pyc
+outputs_locali/
+src/__pycache__/
 */.env
