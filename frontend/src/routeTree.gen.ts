@@ -13,11 +13,10 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as LayoutRouteImport } from './routes/_layout'
-import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
-import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as Layout_reportRouteImport } from './routes/_layout_report'
+import { Route as Layout_reportIndexRouteImport } from './routes/_layout_report/index'
+import { Route as Layout_reportCompanyInfoRouteImport } from './routes/_layout_report/company-info'
+import { Route as Layout_reportReportTaskIdRouteImport } from './routes/_layout_report/report/$taskId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -39,62 +38,56 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LayoutRoute = LayoutRouteImport.update({
-  id: '/_layout',
+const Layout_reportRoute = Layout_reportRouteImport.update({
+  id: '/_layout_report',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LayoutIndexRoute = LayoutIndexRouteImport.update({
+const Layout_reportIndexRoute = Layout_reportIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LayoutRoute,
+  getParentRoute: () => Layout_reportRoute,
 } as any)
-const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutAdminRoute = LayoutAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => LayoutRoute,
-} as any)
+const Layout_reportCompanyInfoRoute =
+  Layout_reportCompanyInfoRouteImport.update({
+    id: '/company-info',
+    path: '/company-info',
+    getParentRoute: () => Layout_reportRoute,
+  } as any)
+const Layout_reportReportTaskIdRoute =
+  Layout_reportReportTaskIdRouteImport.update({
+    id: '/report/$taskId',
+    path: '/report/$taskId',
+    getParentRoute: () => Layout_reportRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
-  '/settings': typeof LayoutSettingsRoute
-  '/': typeof LayoutIndexRoute
+  '/company-info': typeof Layout_reportCompanyInfoRoute
+  '/': typeof Layout_reportIndexRoute
+  '/report/$taskId': typeof Layout_reportReportTaskIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
-  '/settings': typeof LayoutSettingsRoute
-  '/': typeof LayoutIndexRoute
+  '/company-info': typeof Layout_reportCompanyInfoRoute
+  '/': typeof Layout_reportIndexRoute
+  '/report/$taskId': typeof Layout_reportReportTaskIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_layout': typeof LayoutRouteWithChildren
+  '/_layout_report': typeof Layout_reportRouteWithChildren
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/_layout/admin': typeof LayoutAdminRoute
-  '/_layout/items': typeof LayoutItemsRoute
-  '/_layout/settings': typeof LayoutSettingsRoute
-  '/_layout/': typeof LayoutIndexRoute
+  '/_layout_report/company-info': typeof Layout_reportCompanyInfoRoute
+  '/_layout_report/': typeof Layout_reportIndexRoute
+  '/_layout_report/report/$taskId': typeof Layout_reportReportTaskIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -103,35 +96,32 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/admin'
-    | '/items'
-    | '/settings'
+    | '/company-info'
     | '/'
+    | '/report/$taskId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/admin'
-    | '/items'
-    | '/settings'
+    | '/company-info'
     | '/'
+    | '/report/$taskId'
   id:
     | '__root__'
-    | '/_layout'
+    | '/_layout_report'
     | '/login'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/_layout/admin'
-    | '/_layout/items'
-    | '/_layout/settings'
-    | '/_layout/'
+    | '/_layout_report/company-info'
+    | '/_layout_report/'
+    | '/_layout_report/report/$taskId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  LayoutRoute: typeof LayoutRouteWithChildren
+  Layout_reportRoute: typeof Layout_reportRouteWithChildren
   LoginRoute: typeof LoginRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -168,63 +158,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_layout': {
-      id: '/_layout'
+    '/_layout_report': {
+      id: '/_layout_report'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof LayoutRouteImport
+      preLoaderRoute: typeof Layout_reportRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_layout/': {
-      id: '/_layout/'
+    '/_layout_report/': {
+      id: '/_layout_report/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof LayoutIndexRouteImport
-      parentRoute: typeof LayoutRoute
+      preLoaderRoute: typeof Layout_reportIndexRouteImport
+      parentRoute: typeof Layout_reportRoute
     }
-    '/_layout/settings': {
-      id: '/_layout/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof LayoutSettingsRouteImport
-      parentRoute: typeof LayoutRoute
+    '/_layout_report/company-info': {
+      id: '/_layout_report/company-info'
+      path: '/company-info'
+      fullPath: '/company-info'
+      preLoaderRoute: typeof Layout_reportCompanyInfoRouteImport
+      parentRoute: typeof Layout_reportRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/admin': {
-      id: '/_layout/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof LayoutAdminRouteImport
-      parentRoute: typeof LayoutRoute
+    '/_layout_report/report/$taskId': {
+      id: '/_layout_report/report/$taskId'
+      path: '/report/$taskId'
+      fullPath: '/report/$taskId'
+      preLoaderRoute: typeof Layout_reportReportTaskIdRouteImport
+      parentRoute: typeof Layout_reportRoute
     }
   }
 }
 
-interface LayoutRouteChildren {
-  LayoutAdminRoute: typeof LayoutAdminRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
-  LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutIndexRoute: typeof LayoutIndexRoute
+interface Layout_reportRouteChildren {
+  Layout_reportCompanyInfoRoute: typeof Layout_reportCompanyInfoRoute
+  Layout_reportIndexRoute: typeof Layout_reportIndexRoute
+  Layout_reportReportTaskIdRoute: typeof Layout_reportReportTaskIdRoute
 }
 
-const LayoutRouteChildren: LayoutRouteChildren = {
-  LayoutAdminRoute: LayoutAdminRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
-  LayoutSettingsRoute: LayoutSettingsRoute,
-  LayoutIndexRoute: LayoutIndexRoute,
+const Layout_reportRouteChildren: Layout_reportRouteChildren = {
+  Layout_reportCompanyInfoRoute: Layout_reportCompanyInfoRoute,
+  Layout_reportIndexRoute: Layout_reportIndexRoute,
+  Layout_reportReportTaskIdRoute: Layout_reportReportTaskIdRoute,
 }
 
-const LayoutRouteWithChildren =
-  LayoutRoute._addFileChildren(LayoutRouteChildren)
+const Layout_reportRouteWithChildren = Layout_reportRoute._addFileChildren(
+  Layout_reportRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
-  LayoutRoute: LayoutRouteWithChildren,
+  Layout_reportRoute: Layout_reportRouteWithChildren,
   LoginRoute: LoginRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,

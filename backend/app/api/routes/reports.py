@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from app.api.deps import SessionDep
-from app.models import CompanyInfo, TaskPublic, CompanyInfoCreate, Task
+from app.models import CompanyInfo, TaskPublic, CompanyInfoCreate, Task, CompanyInfoBase
 # from utils.email import generate_send_report_email, send_email
 from typing import List
 
@@ -85,4 +85,4 @@ def create_task(
     #     subject=email_data.subject,
     #     html_content=email_data.html_content,
     # )
-    return task
+    return TaskPublic.validate(task)

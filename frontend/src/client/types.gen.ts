@@ -9,6 +9,19 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CompanyInfoCreate = {
+    name: string;
+    url_linkedin: string;
+    url_sito: string;
+    nazione: string;
+    citta: string;
+    settore: string;
+    tipo_azienda: EnumTipoAzienda;
+    cta_email: string;
+};
+
+export type EnumTipoAzienda = 'Startup' | 'PMI' | 'Corporate';
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -49,6 +62,12 @@ export type PrivateUserCreate = {
     password: string;
     full_name: string;
     is_verified?: boolean;
+};
+
+export type TaskPublic = {
+    status: string;
+    id: string;
+    company_info_id: string;
 };
 
 export type Token = {
@@ -170,6 +189,24 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type ReportReadReportsData = {
+    taskId: string;
+};
+
+export type ReportReadReportsResponse = (Array<TaskPublic>);
+
+export type ReportReadTaskData = {
+    taskId: string;
+};
+
+export type ReportReadTaskResponse = (TaskPublic);
+
+export type ReportCreateTaskData = {
+    requestBody: CompanyInfoCreate;
+};
+
+export type ReportCreateTaskResponse = (TaskPublic);
 
 export type UsersReadUsersData = {
     limit?: number;
