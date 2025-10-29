@@ -26,7 +26,8 @@ const UserMenu = () => {
           </MenuTrigger>
 
           <MenuContent>
-            <Link to="/settings">
+            <Link to="/">
+              {/* to="/settings" */}
               <MenuItem
                 closeOnSelect
                 value="user-settings"
@@ -53,7 +54,7 @@ const UserMenu = () => {
         </MenuRoot>
       </Flex>
     </>
-  )
+  );
 }
 
 export default UserMenu

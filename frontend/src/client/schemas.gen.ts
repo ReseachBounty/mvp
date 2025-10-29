@@ -55,6 +55,59 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const CompanyInfoCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Name'
+        },
+        url_linkedin: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Url Linkedin'
+        },
+        url_sito: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Url Sito'
+        },
+        nazione: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Nazione'
+        },
+        citta: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Citta'
+        },
+        settore: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Settore'
+        },
+        tipo_azienda: {
+            '$ref': '#/components/schemas/EnumTipoAzienda'
+        },
+        cta_email: {
+            type: 'string',
+            maxLength: 255,
+            format: 'email',
+            title: 'Cta Email'
+        }
+    },
+    type: 'object',
+    required: ['name', 'url_linkedin', 'url_sito', 'nazione', 'citta', 'settore', 'tipo_azienda', 'cta_email'],
+    title: 'CompanyInfoCreate'
+} as const;
+
+export const EnumTipoAziendaSchema = {
+    type: 'string',
+    enum: ['Startup', 'PMI', 'Corporate'],
+    title: 'EnumTipoAzienda'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -235,6 +288,29 @@ export const PrivateUserCreateSchema = {
     type: 'object',
     required: ['email', 'password', 'full_name'],
     title: 'PrivateUserCreate'
+} as const;
+
+export const TaskPublicSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Status'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        company_info_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Company Info Id'
+        }
+    },
+    type: 'object',
+    required: ['status', 'id', 'company_info_id'],
+    title: 'TaskPublic'
 } as const;
 
 export const TokenSchema = {
