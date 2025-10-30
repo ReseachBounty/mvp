@@ -26,9 +26,9 @@ export const Route = createFileRoute("/_layout_report/company-info")({
 });
 
 enum CompanyType {
-  Startup = "Startup",
-  PMI = "PMI",
-  Corporate = "Corporate",
+  Startup = "startup",
+  PMI = "pmi",
+  MULTINAZIONALE = "multinazionale",
 }
 
 

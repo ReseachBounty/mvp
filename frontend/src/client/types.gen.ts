@@ -20,7 +20,10 @@ export type CompanyInfoCreate = {
     cta_email: string;
 };
 
-export type EnumTipoAzienda = 'Startup' | 'PMI' | 'Corporate';
+/**
+ * Type of company
+ */
+export type EnumTipoAzienda = 'startup' | 'pmi' | 'multinazionale';
 
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
@@ -65,10 +68,19 @@ export type PrivateUserCreate = {
 };
 
 export type TaskPublic = {
-    status: string;
+    status?: TaskStatusEnum;
+    error_message?: (string | null);
     id: string;
     company_info_id: string;
+    result_data?: ({
+    [key: string]: unknown;
+} | null);
 };
+
+/**
+ * Status of an analysis job
+ */
+export type TaskStatusEnum = 'pending' | 'running' | 'completed' | 'failed';
 
 export type Token = {
     access_token: string;

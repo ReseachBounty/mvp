@@ -104,8 +104,9 @@ export const CompanyInfoCreateSchema = {
 
 export const EnumTipoAziendaSchema = {
     type: 'string',
-    enum: ['Startup', 'PMI', 'Corporate'],
-    title: 'EnumTipoAzienda'
+    enum: ['startup', 'pmi', 'multinazionale'],
+    title: 'EnumTipoAzienda',
+    description: 'Type of company'
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -293,9 +294,20 @@ export const PrivateUserCreateSchema = {
 export const TaskPublicSchema = {
     properties: {
         status: {
-            type: 'string',
-            maxLength: 50,
-            title: 'Status'
+            '$ref': '#/components/schemas/TaskStatusEnum',
+            default: 'pending'
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 1000
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message'
         },
         id: {
             type: 'string',
@@ -306,11 +318,30 @@ export const TaskPublicSchema = {
             type: 'string',
             format: 'uuid',
             title: 'Company Info Id'
+        },
+        result_data: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Result Data'
         }
     },
     type: 'object',
-    required: ['status', 'id', 'company_info_id'],
+    required: ['id', 'company_info_id'],
     title: 'TaskPublic'
+} as const;
+
+export const TaskStatusEnumSchema = {
+    type: 'string',
+    enum: ['pending', 'running', 'completed', 'failed'],
+    title: 'TaskStatusEnum',
+    description: 'Status of an analysis job'
 } as const;
 
 export const TokenSchema = {
