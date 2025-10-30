@@ -1,5 +1,13 @@
 """Services package for the backend application."""
 
-from .analysis_client import AnalysisServiceClient, CompanyInfoRequest, AnalysisJobResponse
+from .analysis_service import AnalysisService, get_analysis_service, AnalysisJob
 
-__all__ = ["AnalysisServiceClient", "CompanyInfoRequest", "AnalysisJobResponse"]
+__all__ = [
+    "AnalysisService",
+    "get_analysis_service",
+    "AnalysisJob",
+    "AnalysisStatus",
+    "CompanyInfo",
+    "AnalysisFilesInfo",
+    "EnumTipoAzienda"
+]

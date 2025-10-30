@@ -61,6 +61,7 @@ function CompanyInfo() {
     },
     onError: (err: ApiError) => {
       handleError(err);
+      setTaskId(null); // Reset taskId on error
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
@@ -69,6 +70,10 @@ function CompanyInfo() {
 
   const onSubmit: SubmitHandler<CompanyInfoCreate> = (data) => {
     mutation.mutate(data);
+  };
+
+  const handleCloseOverlay = () => {
+    setTaskId(null);
   };
 
   return (
@@ -265,14 +270,25 @@ function CompanyInfo() {
 
           {/* Pulsante submit */}
           <HStack justify="flex-end" pt={8}>
-            <Button type="submit" colorScheme="blue">
-              Genera Report
+            <Button
+              type="submit"
+              colorScheme="blue"
+              loading={mutation.isPending}
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? "Invio richiesta..." : "Genera Report"}
             </Button>
           </HStack>
         </form>
       </Container>
 
-      {taskId && <TaskLoading taskId={taskId} isOpen={!!taskId} />}
+      {taskId && (
+        <TaskLoading
+          taskId={taskId}
+          isOpen={!!taskId}
+          onClose={handleCloseOverlay}
+        />
+      )}
     </Box>
   );
 }

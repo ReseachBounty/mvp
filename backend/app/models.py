@@ -118,9 +118,10 @@ class NewPassword(SQLModel):
 
 
 class EnumTipoAzienda(str, Enum):
-    STARTUP = "Startup"
-    PMI = "PMI"
-    CORPORATE = "Corporate"
+    """Type of company"""
+    STARTUP = "startup"
+    PMI = "pmi"
+    MULTINAZIONALE = "multinazionale"
 
 
 class CompanyInfoBase(SQLModel):
@@ -140,8 +141,15 @@ class CompanyInfo(CompanyInfoBase, table=True):
 class CompanyInfoCreate(CompanyInfoBase):
     pass
 
+class TaskStatusEnum(str, Enum):
+    """Status of an analysis job"""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
 class TaskBase(SQLModel):
-    status: str = Field(max_length=50)
+    status: TaskStatusEnum = Field(default=TaskStatusEnum.PENDING)
     error_message: str | None = Field(default=None, max_length=1000)
     # TODO: parametri da aggiungere
 

@@ -6,33 +6,41 @@ import json
 import os
 import logging
 import time
-import uuid
+import uuid as uuid_lib
+import base64
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import threading
 from dotenv import load_dotenv
+from sqlmodel import Session
 
-# Add parent directory to path to import from src
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add parent directories to path to import from src
+project_root = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-from src.models import StructuredAnalysis
-from src.api_clients import PerplexityClient, ClaudeClient
-from src.utils import (
+from .api_clients import PerplexityClient, ClaudeClient
+from .utils import (
     make_filename_safe,
     get_company_linkedin,
     detect_generic_analysis
 )
-from src.report_generator import (
+from .report_generator import (
     clean_analysis_data,
     format_structured_output,
     convert_markdown_to_pdf
 )
-from src.logging_config import setup_logging, get_context_logger
-from backend.models import AnalysisStatus, AnalysisFilesInfo, CompanyInfo
+from .logging_config import setup_logging, get_context_logger
+from ..models import TaskStatusEnum, CompanyInfo, Task
+from .models import StructuredAnalysis
+from ..core.db import engine
+from .mock_data import get_mock_perplexity_response, get_mock_claude_response
 
 # Load environment variables
 load_dotenv()
+
+# Check if dev mode is enabled
+DEV_MODE = os.getenv('DEV_MODE', 'false').lower() == 'true'
 
 # Configure structured logging
 setup_logging(
@@ -43,14 +51,21 @@ setup_logging(
 
 logger = logging.getLogger("analysis_service")
 
+if DEV_MODE:
+    logger.warning("=" * 80)
+    logger.warning("DEV MODE ENABLED - Using mock data instead of real API calls")
+    logger.warning("Set DEV_MODE=false in .env to use real APIs")
+    logger.warning("=" * 80)
+
 
 class AnalysisJob:
     """Represents a single analysis job"""
 
-    def __init__(self, job_id: str, company_info: CompanyInfo):
+    def __init__(self, job_id: str, company_info: CompanyInfo, task_id: Optional[str] = None):
         self.job_id = job_id
         self.company_info = company_info
-        self.status = AnalysisStatus.PENDING
+        self.task_id = task_id  # Database task ID for status updates
+        self.status = TaskStatusEnum.PENDING
         self.created_at = datetime.now()
         self.started_at: Optional[datetime] = None
         self.completed_at: Optional[datetime] = None
@@ -96,35 +111,47 @@ class AnalysisService:
         self.output_dir.mkdir(exist_ok=True)
         self._lock = threading.Lock()
 
-        # Check API keys
+        # Check API keys (not required in dev mode)
         self.perplexity_api_key = os.getenv('PERPLEXITY_API_KEY')
         self.anthropic_api_key = os.getenv('ANTHROPIC_API_KEY')
 
-        if not self.perplexity_api_key:
-            logging.error("PERPLEXITY_API_KEY not found in environment variables")
-            raise ValueError("PERPLEXITY_API_KEY not configured")
+        if not DEV_MODE:
+            if not self.perplexity_api_key:
+                logging.error("PERPLEXITY_API_KEY not found in environment variables")
+                raise ValueError("PERPLEXITY_API_KEY not configured")
 
-        if not self.anthropic_api_key:
-            logging.error("ANTHROPIC_API_KEY not found in environment variables")
-            raise ValueError("ANTHROPIC_API_KEY not configured")
+            if not self.anthropic_api_key:
+                logging.error("ANTHROPIC_API_KEY not found in environment variables")
+                raise ValueError("ANTHROPIC_API_KEY not configured")
+        else:
+            logging.info("DEV MODE: API keys not required")
 
-    def create_job(self, company_info: CompanyInfo) -> str:
-        """Create a new analysis job"""
-        job_id = str(uuid.uuid4())
+    def create_job(self, company_info: CompanyInfo, task_id: Optional[str] = None) -> str:
+        """Create a new analysis job
+
+        Args:
+            company_info: Company information for analysis
+            task_id: Optional database task ID for status updates
+
+        Returns:
+            job_id: Unique identifier for this analysis job
+        """
+        job_id = str(uuid_lib.uuid4())
 
         log = get_context_logger(job_id=job_id, company_name=company_info.name)
         log.info("Creating new analysis job",
-                 status=AnalysisStatus.PENDING.value,
+                 status=TaskStatusEnum.PENDING.value,
+                 task_id=task_id,
                  step="job_creation")
 
-        job = AnalysisJob(job_id, company_info)
+        job = AnalysisJob(job_id, company_info, task_id)
 
         with self._lock:
             self.jobs[job_id] = job
-            active_jobs = len([j for j in self.jobs.values() if j.status == AnalysisStatus.RUNNING])
+            active_jobs = len([j for j in self.jobs.values() if j.status == TaskStatusEnum.RUNNING])
 
         log.info("Job created and queued",
-                 status=AnalysisStatus.PENDING.value,
+                 status=TaskStatusEnum.PENDING.value,
                  active_jobs=active_jobs,
                  total_jobs=len(self.jobs))
 
@@ -149,6 +176,90 @@ class AnalysisService:
         with self._lock:
             return [job.to_dict() for job in self.jobs.values()]
 
+    def _update_task_in_db(self, job: AnalysisJob):
+        """Update task status in database if task_id is provided"""
+        if not job.task_id:
+            return
+
+        try:
+            with Session(engine) as session:
+                task = session.get(Task, job.task_id)
+                if task:
+                    task.status = job.status.value
+                    if job.error_message:
+                        task.error_message = job.error_message
+                    if job.files:
+                        task.result_data = job.files
+                    session.commit()
+                    logger.debug(f"Updated task {job.task_id} in database with status {job.status.value}")
+                else:
+                    logger.warning(f"Task {job.task_id} not found in database")
+        except Exception as e:
+            logger.error(f"Error updating task {job.task_id} in database: {e}", exc_info=True)
+
+    def _build_structured_result_data(
+        self,
+        analysis_json: Dict,
+        pdf_path: Optional[Path],
+        images_dir: Optional[Path]
+    ) -> Dict:
+        """
+        Build structured result_data for the task
+
+        Args:
+            analysis_json: Parsed JSON analysis from Claude
+            pdf_path: Path to generated PDF file
+            images_dir: Directory containing downloaded images
+
+        Returns:
+            Structured dictionary with overview, actions, analytics, and bytes
+        """
+        result_data = {
+            "overview": {},
+            "actions": {},
+            "analytics": {
+                "images": []
+            },
+            "bytes": None
+        }
+
+        try:
+            # Extract overview from executive_summary
+            if "executive_summary" in analysis_json:
+                result_data["overview"] = analysis_json["executive_summary"]
+
+            # Extract actions from strategic_recommendations
+            if "strategic_recommendations" in analysis_json:
+                result_data["actions"] = analysis_json["strategic_recommendations"]
+
+            # Collect image paths from images directory
+            if images_dir and images_dir.exists():
+                image_files = []
+                for ext in ['*.jpg', '*.jpeg', '*.png', '*.gif']:
+                    image_files.extend(images_dir.glob(ext))
+
+                result_data["analytics"]["images"] = [
+                    str(img_path.absolute()) for img_path in sorted(image_files)
+                ]
+
+                logger.info(f"Collected {len(image_files)} images from {images_dir}")
+
+            # Read PDF and convert to base64
+            if pdf_path and pdf_path.exists():
+                with open(pdf_path, 'rb') as pdf_file:
+                    pdf_bytes = pdf_file.read()
+                    pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
+                    result_data["bytes"] = pdf_base64
+
+                logger.info(f"Converted PDF to base64 ({len(pdf_base64)} characters)")
+            else:
+                logger.warning("PDF file not found, bytes field will be null")
+
+        except Exception as e:
+            logger.error(f"Error building structured result data: {e}", exc_info=True)
+
+        return result_data
+
     def _run_analysis(self, job_id: str):
         """Run the analysis pipeline for a job"""
         # Initialize timing
@@ -168,14 +279,17 @@ class AnalysisService:
 
             # Update status to RUNNING
             old_status = job.status
-            job.status = AnalysisStatus.RUNNING
+            job.status = TaskStatusEnum.RUNNING
             job.started_at = datetime.now()
             job.progress = "Initializing analysis"
 
+            # Save status to database
+            self._update_task_in_db(job)
+
             log.info("Status transition: PENDING → RUNNING",
                      old_status=old_status.value,
-                     new_status=AnalysisStatus.RUNNING.value,
-                     status=AnalysisStatus.RUNNING.value,
+                     new_status=TaskStatusEnum.RUNNING.value,
+                     status=TaskStatusEnum.RUNNING.value,
                      step="status_change")
 
             company_info = job.company_info
@@ -199,26 +313,35 @@ class AnalysisService:
 
             log.info("STEP 1/3: Starting market research with Perplexity AI",
                      step="research_start",
-                     progress="1/3")
+                     progress="1/3",
+                     dev_mode=DEV_MODE)
 
-            perplexity = PerplexityClient(self.perplexity_api_key)
-
-            log.info("Calling Perplexity API for company research")
-
-            research_results = perplexity.research_company(
-                company_name=company_name,
-                company_linkedin=company_info.url_linkedin,
-                company_website=company_info.url_sito,
-                country=company_info.nazione,
-                city=company_info.citta,
-                sector=company_info.settore,
-                company_type=company_info.tipo_azienda.value
-            )
+            if DEV_MODE:
+                log.info("DEV MODE: Using mock Perplexity data")
+                # Simulate API delay
+                time.sleep(2)
+                research_results = get_mock_perplexity_response(
+                    company_name=company_name,
+                    company_type=company_info.tipo_azienda.value
+                )
+            else:
+                perplexity = PerplexityClient(self.perplexity_api_key)
+                log.info("Calling Perplexity API for company research")
+                research_results = perplexity.research_company(
+                    company_name=company_name,
+                    company_linkedin=company_info.url_linkedin,
+                    company_website=company_info.url_sito,
+                    country=company_info.nazione,
+                    city=company_info.citta,
+                    sector=company_info.settore,
+                    company_type=company_info.tipo_azienda.value
+                )
 
             step1_duration = int((time.time() - step1_start) * 1000)
 
             log.info("Perplexity research completed, saving results",
                      duration_ms=step1_duration,
+                     dev_mode=DEV_MODE,
                      step="research_api_complete")
 
             # Save research results
@@ -264,23 +387,29 @@ class AnalysisService:
 
             log.info("STEP 2/3: Starting data analysis with Claude AI",
                      step="analysis_start",
-                     progress="2/3")
+                     progress="2/3",
+                     dev_mode=DEV_MODE)
 
-            claude = ClaudeClient(self.anthropic_api_key)
-
-            log.info("Calling Claude API for analysis")
-
-            analysis_text = claude.analyze_research(
-                company_name=company_name,
-                research_data=research_results,
-                company_info=company_info
-            )
+            if DEV_MODE:
+                log.info("DEV MODE: Using mock Claude data")
+                # Simulate API delay
+                time.sleep(3)
+                analysis_text = get_mock_claude_response(company_name=company_name)
+            else:
+                claude = ClaudeClient(self.anthropic_api_key)
+                log.info("Calling Claude API for analysis")
+                analysis_text = claude.analyze_research(
+                    company_name=company_name,
+                    research_data=research_results,
+                    company_info=company_info
+                )
 
             step2_duration = int((time.time() - step2_start) * 1000)
 
             log.info("Claude analysis completed, parsing JSON",
                      duration_ms=step2_duration,
                      response_length=len(analysis_text),
+                     dev_mode=DEV_MODE,
                      step="analysis_api_complete")
 
             # Parse and validate
@@ -411,32 +540,40 @@ class AnalysisService:
                      duration_ms=step3_duration,
                      step="report_generation_complete")
 
-            # Store file info
-            job.files = {
-                "markdown_file": str(markdown_filename),
-                "json_file": str(json_filename),
-                "pdf_file": str(pdf_filename) if pdf_success else None,
-                "research_file": str(perplexity_filename),
-                "images_count": len(downloaded_images) if downloaded_images else 0
-            }
+            # Build structured result_data with overview, actions, analytics, and PDF bytes
+            log.info("Building structured result data")
 
-            log.info("File metadata stored in job",
-                     files=job.files,
-                     step="files_stored")
+            images_directory = self.output_dir / images_dir if images_dir else None
+
+            job.files = self._build_structured_result_data(
+                analysis_json=analysis_json_cleaned,
+                pdf_path=pdf_filename if pdf_success else None,
+                images_dir=images_directory
+            )
+
+            log.info("Structured result data created",
+                     has_overview="overview" in job.files and bool(job.files["overview"]),
+                     has_actions="actions" in job.files and bool(job.files["actions"]),
+                     images_count=len(job.files.get("analytics", {}).get("images", [])),
+                     has_pdf_bytes=bool(job.files.get("bytes")),
+                     step="result_data_structured")
 
             # Update status to COMPLETED
             old_status = job.status
-            job.status = AnalysisStatus.COMPLETED
+            job.status = TaskStatusEnum.COMPLETED
             job.completed_at = datetime.now()
             job.progress = "Analysis completed successfully"
+
+            # Save final status and results to database
+            self._update_task_in_db(job)
 
             total_elapsed = (job.completed_at - job.started_at).total_seconds()
             pipeline_elapsed = (time.time() - pipeline_start)
 
             log.info("Status transition: RUNNING → COMPLETED",
                      old_status=old_status.value,
-                     new_status=AnalysisStatus.COMPLETED.value,
-                     status=AnalysisStatus.COMPLETED.value,
+                     new_status=TaskStatusEnum.COMPLETED.value,
+                     status=TaskStatusEnum.COMPLETED.value,
                      step="status_change")
 
             log.info("✓ SUCCESS - Analysis pipeline completed",
@@ -456,18 +593,21 @@ class AnalysisService:
 
             # Update job status
             old_status = job.status
-            job.status = AnalysisStatus.FAILED
+            job.status = TaskStatusEnum.FAILED
             job.completed_at = datetime.now()
             job.error_message = str(e)
             job.progress = "Analysis failed"
+
+            # Save error status to database
+            self._update_task_in_db(job)
 
             # Determine error type
             error_type = type(e).__name__
 
             log.error("✗ FAILURE - Analysis pipeline failed",
                      old_status=old_status.value,
-                     new_status=AnalysisStatus.FAILED.value,
-                     status=AnalysisStatus.FAILED.value,
+                     new_status=TaskStatusEnum.FAILED.value,
+                     status=TaskStatusEnum.FAILED.value,
                      error_type=error_type,
                      error_message=str(e),
                      elapsed_seconds=round(elapsed, 2),
